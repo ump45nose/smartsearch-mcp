@@ -221,13 +221,19 @@ Settings → Apps → Create
 | Description | `私有只读网页搜索、抓取、站点地图、路由与研究工具` |
 | MCP Server URL / Endpoint | `https://smartsearch-mcp-home.172906573.xyz:28443/mcp` |
 | Authentication | `OAuth` |
+| Advanced OAuth → Registration method | `动态客户端注册（DCR）` |
+| Token endpoint authentication method | `none` |
 
-服务支持 OAuth metadata、DCR/CIMD，因此不要手工填写 provider token，也不要把
-Authelia 的 client secret 复制到 ChatGPT。
+服务支持 DCR，因此不要手工填写 OAuth Client ID、Client Secret 或 provider
+token，也不要把 Authelia 的 client secret 复制到 ChatGPT。
 
-### 2. Scan Tools 并完成 OAuth
+当前部署不要选择 CIMD。FastMCP 容器的 SSRF-safe CIMD fetch 对 ChatGPT
+`client.json` 的 TLS 握手失败，服务端会把 CIMD client ID 判定为未注册客户端；
+DCR 已通过公网 registration endpoint 的真实测试。
 
-1. 点击 `Scan Tools`。
+### 2. 创建/扫描工具并完成 OAuth
+
+1. 点击 `Create`；部分界面版本会先显示 `Scan Tools`。
 2. ChatGPT 应跳转到 Authelia；完成登录、2FA 和 consent，只点一次“允许”。
 3. 回调地址应为
    `https://chatgpt.com/connector/oauth/<callback_id>`，不要改写或删掉
@@ -278,6 +284,8 @@ https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
 ### ChatGPT 常见问题
 
 - `Scan Tools` 无法连接：确认 URL 带 `:28443/mcp`，不能使用 NAS 的无端口地址。
+- OAuth 提示 client ID 未注册：高级 OAuth 设置必须选择
+  `动态客户端注册（DCR）`，不要选择 CIMD。
 - OAuth 跳转丢失 `:28443`：不要继续授权，保存当前完整 URL 后检查 Authelia
   反代 rewrite。
 - `redirect_uri` 被拒绝：确认回调主机是 `chatgpt.com`，路径是
