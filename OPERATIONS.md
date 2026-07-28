@@ -63,6 +63,8 @@ The generated proxy configuration:
 - gives MCP/SSE requests a 900-second proxy timeout
 - routes `/codex-oauth-callback/*` only to the temporary Codex listener at
   `192.168.31.201:5555`
+- routes `/hermes-oauth-callback/*` only to a temporary bridge at
+  `192.168.31.201:5556`, which forwards to Hermes' loopback-only listener
 - routes all other paths to `smartsearch-mcp:8000`
 
 ## DNS and LAN split
@@ -130,6 +132,33 @@ codex mcp login \
 
 Codex appends a per-login callback suffix. The NPM route forwards only that
 scoped path while the temporary listener is running.
+
+## Hermes client
+
+Hermes stores MCP OAuth state per Profile. Preserve any existing stdio
+SmartSearch entry and add a second remote entry:
+
+```yaml
+mcp_servers:
+  smartsearch-remote:
+    url: "https://smartsearch-mcp-home.172906573.xyz/mcp"
+    auth: oauth
+    connect_timeout: 315
+    timeout: 900
+    enabled: true
+    oauth:
+      redirect_port: 5556
+      redirect_uri: "https://smartsearch-mcp-home.172906573.xyz/hermes-oauth-callback/lingjun"
+```
+
+Hermes binds its callback server to `127.0.0.1`. During login, run a temporary
+host bridge on `192.168.31.201:5556` forwarding to `127.0.0.1:5556`, then run
+`hermes --profile lingjun mcp login smartsearch-remote`. Stop the bridge after
+the token is stored. Do not persist it as a general-purpose listener.
+
+```bash
+python3 scripts/hermes_oauth_loopback_bridge.py
+```
 
 ## ChatGPT and Claude
 

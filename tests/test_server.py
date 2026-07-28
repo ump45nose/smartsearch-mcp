@@ -116,6 +116,15 @@ class AuthorizationTests(unittest.TestCase):
         )
         self.assertTrue(
             validate_redirect_uri(
+                (
+                    "https://smartsearch-mcp-home.172906573.xyz/"
+                    "hermes-oauth-callback/lingjun"
+                ),
+                allowed,
+            )
+        )
+        self.assertTrue(
+            validate_redirect_uri(
                 "https://claude.ai/api/mcp/auth_callback",
                 allowed,
             )

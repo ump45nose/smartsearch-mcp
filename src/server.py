@@ -72,6 +72,10 @@ ALLOWED_CLIENT_REDIRECT_URIS = [
         "https://smartsearch-mcp-home.172906573.xyz/"
         "codex-oauth-callback/*"
     ),
+    (
+        "https://smartsearch-mcp-home.172906573.xyz/"
+        "hermes-oauth-callback/*"
+    ),
     "http://localhost:*",
     "http://127.0.0.1:*",
     "https://claude.ai/api/mcp/auth_callback",
