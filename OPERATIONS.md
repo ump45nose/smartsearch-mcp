@@ -67,13 +67,21 @@ The generated proxy configuration:
   `192.168.31.201:5556`, which forwards to Hermes' loopback-only listener
 - routes all other paths to `smartsearch-mcp:8000`
 
-## DNS and LAN split
+## DNS, public port, and LAN split
 
-The exact SmartSearch hostname is published through a Cloudflare-proxied AAAA
-record. DDNS-Go retains proxy mode by listing the hostname with
-`?proxied=true`; do not add the exact hostname to the IPv4 origin record.
+The exact SmartSearch hostname uses DNS-only Cloudflare A and AAAA records.
+DDNS-Go lists the exact hostname in both address families without
+`?proxied=true`. Cloudflare's reverse proxy does not accept arbitrary port
+28443, so enabling orange-cloud proxying breaks this public endpoint.
 
-LAN clients bypass Cloudflare with:
+The gateway publishes NPM container port 443 on host port 28443. External
+clients therefore use:
+
+```text
+https://smartsearch-mcp-home.172906573.xyz:28443/mcp
+```
+
+LAN clients use NPM's local 443 mapping with:
 
 ```text
 192.168.31.201 smartsearch-mcp-home.172906573.xyz
@@ -81,8 +89,13 @@ LAN clients bypass Cloudflare with:
 
 After editing `/etc/hosts`, restart ShellCrash and verify the line exists in
 both the source hosts file and its effective `/tmp/ShellCrash/config.yaml`.
+Authelia's NPM host rewrites its browser redirects and advertised OIDC
+endpoints to public port 28443 while preserving the original issuer. Apply the
+guarded configuration with `scripts/configure-authelia-public-port.mjs`; pass
+`--remove` only to roll back that exact managed block.
+
 Test LAN and public access independently; a LAN result is not proof of public
-DNS, IPv4/IPv6, TCP 443, or TLS.
+DNS, IPv4/IPv6, TCP 28443, or TLS.
 
 ## OAuth and protocol acceptance
 
