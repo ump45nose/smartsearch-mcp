@@ -1,0 +1,3 @@
+fastmcp==3.4.4
+py-key-value-aio[disk,wrappers-encryption]==0.4.5
+smart-search @ https://github.com/konbakuyomu/smartsearch/archive/667c465d0f6ea16a423f03c434f94e21505d3595.tar.gz
