@@ -7,7 +7,7 @@ const DOMAIN = "authelia-home.172906573.xyz";
 const OWNER_USER_ID = 1;
 const CERTIFICATE_ID = 2;
 const REMOVE = process.argv.includes("--remove");
-const ADVANCED_CONFIG = `proxy_set_header Accept-Encoding "";
+const LEGACY_ADVANCED_CONFIG = `proxy_set_header Accept-Encoding "";
 proxy_redirect https://authelia-home.172906573.xyz/ https://authelia-home.172906573.xyz:28443/;
 sub_filter_once off;
 sub_filter_types application/json;
@@ -18,6 +18,33 @@ sub_filter '"introspection_endpoint":"https://authelia-home.172906573.xyz/' '"in
 sub_filter '"revocation_endpoint":"https://authelia-home.172906573.xyz/' '"revocation_endpoint":"https://authelia-home.172906573.xyz:28443/';
 sub_filter '"device_authorization_endpoint":"https://authelia-home.172906573.xyz/' '"device_authorization_endpoint":"https://authelia-home.172906573.xyz:28443/';
 sub_filter '"pushed_authorization_request_endpoint":"https://authelia-home.172906573.xyz/' '"pushed_authorization_request_endpoint":"https://authelia-home.172906573.xyz:28443/';`;
+const HTML_BASE_V1_ADVANCED_CONFIG = `proxy_set_header Accept-Encoding "";
+proxy_redirect https://authelia-home.172906573.xyz/ https://authelia-home.172906573.xyz:28443/;
+sub_filter_once off;
+sub_filter_types text/html application/json;
+sub_filter '<base href="https://authelia-home.172906573.xyz/">' '<base href="https://authelia-home.172906573.xyz:28443/">';
+sub_filter '"jwks_uri":"https://authelia-home.172906573.xyz/' '"jwks_uri":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"authorization_endpoint":"https://authelia-home.172906573.xyz/' '"authorization_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"token_endpoint":"https://authelia-home.172906573.xyz/' '"token_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"introspection_endpoint":"https://authelia-home.172906573.xyz/' '"introspection_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"revocation_endpoint":"https://authelia-home.172906573.xyz/' '"revocation_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"device_authorization_endpoint":"https://authelia-home.172906573.xyz/' '"device_authorization_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"pushed_authorization_request_endpoint":"https://authelia-home.172906573.xyz/' '"pushed_authorization_request_endpoint":"https://authelia-home.172906573.xyz:28443/';`;
+const HTML_BASE_V2_ADVANCED_CONFIG = `proxy_set_header Accept-Encoding "";
+proxy_redirect https://authelia-home.172906573.xyz/ https://authelia-home.172906573.xyz:28443/;
+sub_filter_once off;
+sub_filter_types application/json;
+sub_filter '<base href="https://authelia-home.172906573.xyz/" />' '<base href="https://authelia-home.172906573.xyz:28443/" />';
+sub_filter '"jwks_uri":"https://authelia-home.172906573.xyz/' '"jwks_uri":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"authorization_endpoint":"https://authelia-home.172906573.xyz/' '"authorization_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"token_endpoint":"https://authelia-home.172906573.xyz/' '"token_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"introspection_endpoint":"https://authelia-home.172906573.xyz/' '"introspection_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"revocation_endpoint":"https://authelia-home.172906573.xyz/' '"revocation_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"device_authorization_endpoint":"https://authelia-home.172906573.xyz/' '"device_authorization_endpoint":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"pushed_authorization_request_endpoint":"https://authelia-home.172906573.xyz/' '"pushed_authorization_request_endpoint":"https://authelia-home.172906573.xyz:28443/';`;
+const ADVANCED_CONFIG = `${HTML_BASE_V2_ADVANCED_CONFIG}
+sub_filter '"redirect_uri":"https://authelia-home.172906573.xyz/' '"redirect_uri":"https://authelia-home.172906573.xyz:28443/';
+sub_filter '"redirect_uri": "https://authelia-home.172906573.xyz/' '"redirect_uri": "https://authelia-home.172906573.xyz:28443/';`;
 
 const normalize = (value) =>
     String(value ?? "").replace(/\r\n/g, "\n").trim();
@@ -59,13 +86,21 @@ async function main() {
     assertTarget(row);
     const current = normalize(row.advanced_config);
     const desired = normalize(ADVANCED_CONFIG);
+    const legacy = normalize(LEGACY_ADVANCED_CONFIG);
+    const htmlBaseV1 = normalize(HTML_BASE_V1_ADVANCED_CONFIG);
+    const htmlBaseV2 = normalize(HTML_BASE_V2_ADVANCED_CONFIG);
 
     if (REMOVE) {
         if (!current) {
             console.log(JSON.stringify({ status: "absent", id: row.id }));
             return;
         }
-        if (current !== desired) {
+        if (
+            current !== desired &&
+            current !== legacy &&
+            current !== htmlBaseV1 &&
+            current !== htmlBaseV2
+        ) {
             throw new Error("refusing to remove unrecognized advanced config");
         }
     } else {
@@ -73,7 +108,12 @@ async function main() {
             console.log(JSON.stringify({ status: "unchanged", id: row.id }));
             return;
         }
-        if (current) {
+        if (
+            current &&
+            current !== legacy &&
+            current !== htmlBaseV1 &&
+            current !== htmlBaseV2
+        ) {
             throw new Error("refusing to overwrite existing advanced config");
         }
     }
