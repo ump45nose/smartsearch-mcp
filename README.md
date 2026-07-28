@@ -197,6 +197,96 @@ sudo -n -u hermes \
 
 `mcp test` 应显示连接成功并发现 5 个工具。
 
+## ChatGPT 网页端：Developer Mode 接入
+
+ChatGPT 只连接远程 MCP，必须使用带 `:28443` 的公网地址。当前 ChatGPT Pro
+在 Developer Mode 下只保证读取类自定义 MCP；本服务的五个工具都声明为
+read-only。
+
+### 1. 创建开发版 App
+
+在 ChatGPT 网页端进入：
+
+```text
+Settings → Apps → Create
+```
+
+不同语言或灰度版本可能显示为“设置 → 应用 → 创建”或“创建自定义连接器”。
+
+建议填写：
+
+| 字段 | 值 |
+|---|---|
+| Name | `SmartSearch Home` |
+| Description | `私有只读网页搜索、抓取、站点地图、路由与研究工具` |
+| MCP Server URL / Endpoint | `https://smartsearch-mcp-home.172906573.xyz:28443/mcp` |
+| Authentication | `OAuth` |
+
+服务支持 OAuth metadata、DCR/CIMD，因此不要手工填写 provider token，也不要把
+Authelia 的 client secret 复制到 ChatGPT。
+
+### 2. Scan Tools 并完成 OAuth
+
+1. 点击 `Scan Tools`。
+2. ChatGPT 应跳转到 Authelia；完成登录、2FA 和 consent，只点一次“允许”。
+3. 回调地址应为
+   `https://chatgpt.com/connector/oauth/<callback_id>`，不要改写或删掉
+   callback ID。
+4. 回到 ChatGPT，等待工具扫描结束。
+
+扫描结果应严格为五个工具：
+
+- `smart_search`
+- `smart_fetch`
+- `smart_map`
+- `smart_route`
+- `smart_research`
+
+如果少于或多于五个，先不要点击 `Create`，保存报错或截图并检查服务端日志。
+五个工具正确后点击 `Create`。
+
+### 3. 在新对话验收
+
+创建一个新对话，从工具/Apps 菜单选择带 `Dev` 标记的 `SmartSearch Home`。
+依次测试：
+
+```text
+请只使用 SmartSearch Home 的 smart_route，分析“OpenAI MCP OAuth 2.1”需要哪些检索能力。
+```
+
+```text
+请只使用 SmartSearch Home 的 smart_fetch，抓取
+https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization
+并返回页面标题。
+```
+
+```text
+请只使用 SmartSearch Home 的 smart_search，搜索“OpenAI MCP OAuth 2.1”，
+返回至少一个引用链接。
+```
+
+验收时分别记录：
+
+- App 已创建
+- OAuth 已完成
+- 扫描到五个工具
+- `smart_route`/`smart_fetch` 真实调用成功
+- `smart_search`/`smart_research` 是否被 Pro 产品权限或 provider 状态限制
+
+健康检查或成功扫描不能代替真实工具调用。
+
+### ChatGPT 常见问题
+
+- `Scan Tools` 无法连接：确认 URL 带 `:28443/mcp`，不能使用 NAS 的无端口地址。
+- OAuth 跳转丢失 `:28443`：不要继续授权，保存当前完整 URL 后检查 Authelia
+  反代 rewrite。
+- `redirect_uri` 被拒绝：确认回调主机是 `chatgpt.com`，路径是
+  `/connector/oauth/<callback_id>`。
+- OAuth 完成但扫描卡住：检查 `docker logs --since 10m smartsearch-mcp`，
+  日志中不得包含 token 或查询正文。
+- App 创建成功但对话里看不到：新建对话，在工具/Apps 菜单显式选择
+  `SmartSearch Home`，并确认它带 `Dev` 标记。
+
 ## Windows 或其他远程电脑：公网接入
 
 建议使用独立名称 `smartsearch-home`，避免与电脑上已有 stdio
