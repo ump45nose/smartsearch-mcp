@@ -1,0 +1,4 @@
+services:
+  authelia:
+    environment:
+      - X_AUTHELIA_CONFIG_FILTERS=template

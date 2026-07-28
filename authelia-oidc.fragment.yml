@@ -1,0 +1,58 @@
+
+# --- SmartSearch Remote MCP OIDC ---
+identity_providers:
+  oidc:
+    hmac_secret: '{{ secret "/config/secrets/oidc/hmac.secret" }}'
+
+    jwks:
+      - algorithm: 'RS256'
+        use: 'sig'
+        key: {{ secret "/config/secrets/oidc/jwks/private.pem" | mindent 10 "|" | msquote }}
+
+    authorization_policies:
+      smartsearch_yuwk:
+        default_policy: 'deny'
+        rules:
+          - policy: 'two_factor'
+            subject:
+              - 'user:yuwk'
+
+    claims_policies:
+      smartsearch_identity:
+        id_token:
+          - 'preferred_username'
+
+    lifespans:
+      custom:
+        smartsearch_remote:
+          access_token: '1 hour'
+          id_token: '1 hour'
+          authorize_code: '1 minute'
+          refresh_token: '30 days'
+
+    clients:
+      - client_id: 'smartsearch-mcp'
+        client_name: 'SmartSearch Remote MCP'
+        client_secret: '{{ secret "/config/secrets/oidc/smartsearch-client-secret.hash" }}'
+        public: false
+        authorization_policy: 'smartsearch_yuwk'
+        claims_policy: 'smartsearch_identity'
+        lifespan: 'smartsearch_remote'
+        consent_mode: 'explicit'
+        redirect_uris:
+          - 'https://smartsearch-mcp-home.172906573.xyz/auth/callback'
+        scopes:
+          - 'openid'
+          - 'profile'
+          - 'offline_access'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+          - 'refresh_token'
+        require_pkce: true
+        pkce_challenge_method: 'S256'
+        token_endpoint_auth_method: 'client_secret_basic'
+        id_token_signed_response_alg: 'RS256'
+        access_token_signed_response_alg: 'none'
+        userinfo_signed_response_alg: 'none'
