@@ -78,6 +78,10 @@ Clients running on the NAS use the LAN-split HTTPS endpoint on port 443:
 https://smartsearch-mcp-home.172906573.xyz/mcp
 ```
 
+The OAuth proxy accepts this NAS-local resource as an explicit alias and
+normalizes it to the public `:28443/mcp` audience. Other resource indicators
+are rejected.
+
 Codex local setup:
 
 ```bash

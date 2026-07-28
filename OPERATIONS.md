@@ -87,6 +87,10 @@ LAN clients use NPM's local 443 mapping with:
 192.168.31.201 smartsearch-mcp-home.172906573.xyz
 ```
 
+The OAuth proxy accepts the corresponding no-port `/mcp` resource as the
+single LAN alias and normalizes it to the public `:28443/mcp` token audience.
+Do not broaden the resource alias set.
+
 After editing `/etc/hosts`, restart ShellCrash and verify the line exists in
 both the source hosts file and its effective `/tmp/ShellCrash/config.yaml`.
 Authelia's NPM host rewrites its browser redirects and advertised OIDC
