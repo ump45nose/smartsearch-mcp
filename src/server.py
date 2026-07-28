@@ -43,7 +43,7 @@ SERVICE_NAME = "smart-search-remote"
 SERVICE_VERSION = "0.1.14-beta.8+fastmcp.3.4.4"
 PUBLIC_BASE_URL = os.getenv(
     "SMARTSEARCH_REMOTE_PUBLIC_BASE_URL",
-    "https://smartsearch-mcp-home.172906573.xyz",
+    "https://smartsearch-mcp-home.172906573.xyz:28443",
 ).rstrip("/")
 MCP_RESOURCE_URL = f"{PUBLIC_BASE_URL}/mcp"
 AUTHELIA_DISCOVERY_URL = os.getenv(
@@ -68,14 +68,8 @@ RESEARCH_OPERATION_SECONDS = 13 * 60
 
 ALLOWED_CLIENT_REDIRECT_URIS = [
     "https://chatgpt.com/connector/oauth/*",
-    (
-        "https://smartsearch-mcp-home.172906573.xyz/"
-        "codex-oauth-callback/*"
-    ),
-    (
-        "https://smartsearch-mcp-home.172906573.xyz/"
-        "hermes-oauth-callback/*"
-    ),
+    f"{PUBLIC_BASE_URL}/codex-oauth-callback/*",
+    f"{PUBLIC_BASE_URL}/hermes-oauth-callback/*",
     "http://localhost:*",
     "http://127.0.0.1:*",
     "https://claude.ai/api/mcp/auth_callback",

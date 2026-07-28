@@ -7,6 +7,15 @@ A hardened Streamable HTTP MCP wrapper around
 The deployment keeps an existing Hermes stdio MCP untouched. It exposes a
 separate remote endpoint for ChatGPT, Codex, and compatible Claude clients.
 
+Public MCP resource:
+
+```text
+https://smartsearch-mcp-home.172906573.xyz:28443/mcp
+```
+
+The explicit port is required because the public ingress maps TCP `28443` to
+Nginx Proxy Manager's HTTPS port.
+
 ## Public tools
 
 - `smart_search`
@@ -60,3 +69,53 @@ credentials. The deployment reads only the variables explicitly listed in
 
 See [OPERATIONS.md](OPERATIONS.md) for activation, ingress, client setup,
 verification, and rollback.
+
+## Local Hermes and Codex
+
+Clients running on the NAS use the LAN-split HTTPS endpoint on port 443:
+
+```text
+https://smartsearch-mcp-home.172906573.xyz/mcp
+```
+
+Codex local setup:
+
+```bash
+codex mcp add smartsearch-remote \
+  --url https://smartsearch-mcp-home.172906573.xyz/mcp
+
+codex mcp login \
+  -c mcp_oauth_callback_port=5555 \
+  -c 'mcp_oauth_callback_url="https://smartsearch-mcp-home.172906573.xyz:28443/codex-oauth-callback"' \
+  smartsearch-remote
+```
+
+Hermes local setup preserves the existing stdio `smart-search` entry and adds
+the remote server to the selected Profile:
+
+```yaml
+mcp_servers:
+  smartsearch-remote:
+    url: "https://smartsearch-mcp-home.172906573.xyz/mcp"
+    auth: oauth
+    connect_timeout: 315
+    timeout: 900
+    enabled: true
+    oauth:
+      redirect_port: 5556
+      redirect_uri: "https://smartsearch-mcp-home.172906573.xyz:28443/hermes-oauth-callback/lingjun"
+```
+
+## External Codex
+
+External clients use the explicit public port:
+
+```bash
+codex mcp add smartsearch-remote \
+  --url https://smartsearch-mcp-home.172906573.xyz:28443/mcp
+
+codex mcp login \
+  -c mcp_oauth_callback_port=5555 \
+  -c 'mcp_oauth_callback_url="https://smartsearch-mcp-home.172906573.xyz:28443/codex-oauth-callback"' \
+  smartsearch-remote
+```

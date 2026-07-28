@@ -108,7 +108,7 @@ class AuthorizationTests(unittest.TestCase):
         self.assertTrue(
             validate_redirect_uri(
                 (
-                    "https://smartsearch-mcp-home.172906573.xyz/"
+                    "https://smartsearch-mcp-home.172906573.xyz:28443/"
                     "codex-oauth-callback/test-id"
                 ),
                 allowed,
@@ -117,7 +117,7 @@ class AuthorizationTests(unittest.TestCase):
         self.assertTrue(
             validate_redirect_uri(
                 (
-                    "https://smartsearch-mcp-home.172906573.xyz/"
+                    "https://smartsearch-mcp-home.172906573.xyz:28443/"
                     "hermes-oauth-callback/lingjun"
                 ),
                 allowed,
@@ -205,7 +205,9 @@ class OAuthProtocolTests(unittest.TestCase):
 
                 with TestClient(
                     app,
-                    base_url="https://smartsearch-mcp-home.172906573.xyz",
+                    base_url=(
+                        "https://smartsearch-mcp-home.172906573.xyz:28443"
+                    ),
                 ) as client:
                     initialize = {
                         "jsonrpc": "2.0",
@@ -237,7 +239,10 @@ class OAuthProtocolTests(unittest.TestCase):
                     self.assertEqual(resource.status_code, 200)
                     self.assertEqual(
                         resource.json()["resource"],
-                        "https://smartsearch-mcp-home.172906573.xyz/mcp",
+                        (
+                            "https://smartsearch-mcp-home.172906573.xyz:"
+                            "28443/mcp"
+                        ),
                     )
 
                     metadata = client.get(

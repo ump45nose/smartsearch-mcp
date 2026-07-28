@@ -6,7 +6,7 @@ names, certificate IDs, and provider endpoints before using it elsewhere.
 ## Boundaries
 
 - Public MCP resource:
-  `https://smartsearch-mcp-home.172906573.xyz/mcp`
+  `https://smartsearch-mcp-home.172906573.xyz:28443/mcp`
 - Upstream identity provider:
   `https://authelia-home.172906573.xyz`
 - Container backend: `http://smartsearch-mcp:8000`
@@ -126,7 +126,7 @@ For a headless host whose browser runs elsewhere:
 ```bash
 codex mcp login \
   -c mcp_oauth_callback_port=5555 \
-  -c 'mcp_oauth_callback_url="https://smartsearch-mcp-home.172906573.xyz/codex-oauth-callback"' \
+  -c 'mcp_oauth_callback_url="https://smartsearch-mcp-home.172906573.xyz:28443/codex-oauth-callback"' \
   smartsearch-remote
 ```
 
@@ -148,7 +148,7 @@ mcp_servers:
     enabled: true
     oauth:
       redirect_port: 5556
-      redirect_uri: "https://smartsearch-mcp-home.172906573.xyz/hermes-oauth-callback/lingjun"
+      redirect_uri: "https://smartsearch-mcp-home.172906573.xyz:28443/hermes-oauth-callback/lingjun"
 ```
 
 Hermes binds its callback server to `127.0.0.1`. During login, run a temporary

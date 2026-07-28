@@ -40,7 +40,7 @@ identity_providers:
         lifespan: 'smartsearch_remote'
         consent_mode: 'explicit'
         redirect_uris:
-          - 'https://smartsearch-mcp-home.172906573.xyz/auth/callback'
+          - 'https://smartsearch-mcp-home.172906573.xyz:28443/auth/callback'
         scopes:
           - 'openid'
           - 'profile'
