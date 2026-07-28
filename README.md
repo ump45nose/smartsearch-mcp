@@ -112,14 +112,15 @@ mcp_servers:
 
 ## External Codex
 
-External clients use the explicit public port:
+External clients use the explicit public port. Run both commands on the
+external Codex machine. Do not reuse the NAS callback override: the default
+OAuth callback is a loopback listener on that external machine, so the browser
+can return the authorization code directly to the Codex process that started
+the login.
 
 ```bash
 codex mcp add smartsearch-remote \
   --url https://smartsearch-mcp-home.172906573.xyz:28443/mcp
 
-codex mcp login \
-  -c mcp_oauth_callback_port=5555 \
-  -c 'mcp_oauth_callback_url="https://smartsearch-mcp-home.172906573.xyz:28443/codex-oauth-callback"' \
-  smartsearch-remote
+codex mcp login smartsearch-remote
 ```
