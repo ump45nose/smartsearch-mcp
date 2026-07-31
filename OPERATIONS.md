@@ -6,7 +6,7 @@ names, certificate IDs, and provider endpoints before using it elsewhere.
 ## Boundaries
 
 - Public MCP resource:
-  `https://smartsearch-mcp-home.172906573.xyz/mcp`
+  `https://smartsearch-mcp-home.172906573.xyz:28443/mcp`
 - Upstream identity provider:
   `https://authelia-home.172906573.xyz`
 - Container backend: `http://smartsearch-mcp:8000`
@@ -63,24 +63,43 @@ The generated proxy configuration:
 - gives MCP/SSE requests a 900-second proxy timeout
 - routes `/codex-oauth-callback/*` only to the temporary Codex listener at
   `192.168.31.201:5555`
+- routes `/hermes-oauth-callback/*` only to a temporary bridge at
+  `192.168.31.201:5556`, which forwards to Hermes' loopback-only listener
 - routes all other paths to `smartsearch-mcp:8000`
 
-## DNS and LAN split
+## DNS, public port, and LAN split
 
-The exact SmartSearch hostname is published through a Cloudflare-proxied AAAA
-record. DDNS-Go retains proxy mode by listing the hostname with
-`?proxied=true`; do not add the exact hostname to the IPv4 origin record.
+The exact SmartSearch hostname uses DNS-only Cloudflare A and AAAA records.
+DDNS-Go lists the exact hostname in both address families without
+`?proxied=true`. Cloudflare's reverse proxy does not accept arbitrary port
+28443, so enabling orange-cloud proxying breaks this public endpoint.
 
-LAN clients bypass Cloudflare with:
+The gateway publishes NPM container port 443 on host port 28443. External
+clients therefore use:
+
+```text
+https://smartsearch-mcp-home.172906573.xyz:28443/mcp
+```
+
+LAN clients use NPM's local 443 mapping with:
 
 ```text
 192.168.31.201 smartsearch-mcp-home.172906573.xyz
 ```
 
+The OAuth proxy accepts the corresponding no-port `/mcp` resource as the
+single LAN alias and normalizes it to the public `:28443/mcp` token audience.
+Do not broaden the resource alias set.
+
 After editing `/etc/hosts`, restart ShellCrash and verify the line exists in
 both the source hosts file and its effective `/tmp/ShellCrash/config.yaml`.
+Authelia's NPM host rewrites its browser redirects and advertised OIDC
+endpoints to public port 28443 while preserving the original issuer. Apply the
+guarded configuration with `scripts/configure-authelia-public-port.mjs`; pass
+`--remove` only to roll back that exact managed block.
+
 Test LAN and public access independently; a LAN result is not proof of public
-DNS, IPv4/IPv6, TCP 443, or TLS.
+DNS, IPv4/IPv6, TCP 28443, or TLS.
 
 ## OAuth and protocol acceptance
 
@@ -124,12 +143,39 @@ For a headless host whose browser runs elsewhere:
 ```bash
 codex mcp login \
   -c mcp_oauth_callback_port=5555 \
-  -c 'mcp_oauth_callback_url="https://smartsearch-mcp-home.172906573.xyz/codex-oauth-callback"' \
+  -c 'mcp_oauth_callback_url="https://smartsearch-mcp-home.172906573.xyz:28443/codex-oauth-callback"' \
   smartsearch-remote
 ```
 
 Codex appends a per-login callback suffix. The NPM route forwards only that
 scoped path while the temporary listener is running.
+
+## Hermes client
+
+Hermes stores MCP OAuth state per Profile. Preserve any existing stdio
+SmartSearch entry and add a second remote entry:
+
+```yaml
+mcp_servers:
+  smartsearch-remote:
+    url: "https://smartsearch-mcp-home.172906573.xyz/mcp"
+    auth: oauth
+    connect_timeout: 315
+    timeout: 900
+    enabled: true
+    oauth:
+      redirect_port: 5556
+      redirect_uri: "https://smartsearch-mcp-home.172906573.xyz:28443/hermes-oauth-callback/lingjun"
+```
+
+Hermes binds its callback server to `127.0.0.1`. During login, run a temporary
+host bridge on `192.168.31.201:5556` forwarding to `127.0.0.1:5556`, then run
+`hermes --profile lingjun mcp login smartsearch-remote`. Stop the bridge after
+the token is stored. Do not persist it as a general-purpose listener.
+
+```bash
+python3 scripts/hermes_oauth_loopback_bridge.py
+```
 
 ## ChatGPT and Claude
 

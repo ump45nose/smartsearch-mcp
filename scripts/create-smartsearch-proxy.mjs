@@ -11,7 +11,24 @@ import {
 const DOMAIN = "smartsearch-mcp-home.172906573.xyz";
 const OWNER_USER_ID = 1;
 const CERTIFICATE_ID = 2;
-const ADVANCED_CONFIG = `location ^~ /codex-oauth-callback/ {
+const ADVANCED_CONFIG = `location ^~ /hermes-oauth-callback/ {
+    access_log off;
+    error_log /dev/null crit;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Scheme $scheme;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_connect_timeout 10s;
+    proxy_read_timeout 30s;
+    proxy_send_timeout 30s;
+    proxy_pass http://192.168.31.201:5556$request_uri;
+}
+
+location ^~ /codex-oauth-callback/ {
     access_log off;
     error_log /dev/null crit;
     proxy_http_version 1.1;

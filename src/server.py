@@ -32,6 +32,8 @@ from fastmcp.server.middleware.authorization import AuthMiddleware
 from fastmcp.server.middleware.response_limiting import ResponseLimitingMiddleware
 from key_value.aio.stores.disk import DiskStore
 from key_value.aio.wrappers.encryption import FernetEncryptionWrapper
+from mcp.server.auth.provider import AuthorizationParams, AuthorizeError
+from mcp.shared.auth import OAuthClientInformationFull
 from mcp.types import ToolAnnotations
 from pydantic import Field
 from starlette.requests import Request
@@ -43,9 +45,14 @@ SERVICE_NAME = "smart-search-remote"
 SERVICE_VERSION = "0.1.14-beta.8+fastmcp.3.4.4"
 PUBLIC_BASE_URL = os.getenv(
     "SMARTSEARCH_REMOTE_PUBLIC_BASE_URL",
-    "https://smartsearch-mcp-home.172906573.xyz",
+    "https://smartsearch-mcp-home.172906573.xyz:28443",
 ).rstrip("/")
 MCP_RESOURCE_URL = f"{PUBLIC_BASE_URL}/mcp"
+LOCAL_BASE_URL = os.getenv(
+    "SMARTSEARCH_REMOTE_LOCAL_BASE_URL",
+    "https://smartsearch-mcp-home.172906573.xyz",
+).rstrip("/")
+LOCAL_MCP_RESOURCE_URL = f"{LOCAL_BASE_URL}/mcp"
 AUTHELIA_DISCOVERY_URL = os.getenv(
     "SMARTSEARCH_REMOTE_OIDC_DISCOVERY_URL",
     "https://authelia-home.172906573.xyz/.well-known/openid-configuration",
@@ -68,10 +75,8 @@ RESEARCH_OPERATION_SECONDS = 13 * 60
 
 ALLOWED_CLIENT_REDIRECT_URIS = [
     "https://chatgpt.com/connector/oauth/*",
-    (
-        "https://smartsearch-mcp-home.172906573.xyz/"
-        "codex-oauth-callback/*"
-    ),
+    f"{PUBLIC_BASE_URL}/codex-oauth-callback/*",
+    f"{PUBLIC_BASE_URL}/hermes-oauth-callback/*",
     "http://localhost:*",
     "http://127.0.0.1:*",
     "https://claude.ai/api/mcp/auth_callback",
@@ -192,6 +197,48 @@ def _silence_non_audit_loggers() -> None:
 
 
 _silence_non_audit_loggers()
+
+
+def _normalize_resource_url(url: str) -> str:
+    parsed = urlsplit(str(url))
+    return urlunsplit(
+        (
+            parsed.scheme.lower(),
+            parsed.netloc.lower(),
+            parsed.path.rstrip("/"),
+            "",
+            "",
+        )
+    )
+
+
+class DualEndpointOIDCProxy(OIDCProxy):
+    """Accept the explicit NAS-local and public resource indicators only."""
+
+    async def authorize(
+        self,
+        client: OAuthClientInformationFull,
+        params: AuthorizationParams,
+    ) -> str:
+        resource = getattr(params, "resource", None)
+        if resource:
+            normalized = _normalize_resource_url(resource)
+            allowed = {
+                _normalize_resource_url(MCP_RESOURCE_URL),
+                _normalize_resource_url(LOCAL_MCP_RESOURCE_URL),
+            }
+            if normalized not in allowed:
+                # `invalid_target` is not accepted by the MCP SDK's current
+                # AuthorizationErrorResponse model. Use a supported error code
+                # instead of leaking a generic server_error.
+                raise AuthorizeError(
+                    error="invalid_request",
+                    error_description="Resource does not match this server",
+                )
+            # FastMCP issues audience-bound tokens for one canonical resource.
+            # Normalize the LAN alias before the transaction is persisted.
+            params = params.model_copy(update={"resource": MCP_RESOURCE_URL})
+        return await super().authorize(client, params)
 
 
 def _ensure_data_dirs() -> None:
@@ -974,7 +1021,7 @@ async def smart_research_tool(
     return _compact_research(result, artifact_id)
 
 
-def build_oidc_provider() -> tuple[OIDCProxy, DiskStore]:
+def build_oidc_provider() -> tuple[DualEndpointOIDCProxy, DiskStore]:
     _ensure_data_dirs()
     client_id = os.getenv("SMARTSEARCH_REMOTE_OIDC_CLIENT_ID", "smartsearch-mcp")
     client_secret = _require_secret("SMARTSEARCH_REMOTE_OIDC_CLIENT_SECRET")
@@ -992,7 +1039,7 @@ def build_oidc_provider() -> tuple[OIDCProxy, DiskStore]:
         salt="smartsearch-remote-oauth-v1",
         raise_on_decryption_error=True,
     )
-    auth = OIDCProxy(
+    auth = DualEndpointOIDCProxy(
         config_url=AUTHELIA_DISCOVERY_URL,
         client_id=client_id,
         client_secret=client_secret,
@@ -1014,7 +1061,10 @@ def build_oidc_provider() -> tuple[OIDCProxy, DiskStore]:
     return auth, raw_store
 
 
-def build_mcp(auth: OIDCProxy | None = None, oauth_store: Any = None) -> FastMCP:
+def build_mcp(
+    auth: DualEndpointOIDCProxy | None = None,
+    oauth_store: Any = None,
+) -> FastMCP:
     @asynccontextmanager
     async def lifespan(_: FastMCP):
         _ensure_data_dirs()

@@ -108,8 +108,17 @@ class AuthorizationTests(unittest.TestCase):
         self.assertTrue(
             validate_redirect_uri(
                 (
-                    "https://smartsearch-mcp-home.172906573.xyz/"
+                    "https://smartsearch-mcp-home.172906573.xyz:28443/"
                     "codex-oauth-callback/test-id"
+                ),
+                allowed,
+            )
+        )
+        self.assertTrue(
+            validate_redirect_uri(
+                (
+                    "https://smartsearch-mcp-home.172906573.xyz:28443/"
+                    "hermes-oauth-callback/lingjun"
                 ),
                 allowed,
             )
@@ -196,7 +205,9 @@ class OAuthProtocolTests(unittest.TestCase):
 
                 with TestClient(
                     app,
-                    base_url="https://smartsearch-mcp-home.172906573.xyz",
+                    base_url=(
+                        "https://smartsearch-mcp-home.172906573.xyz:28443"
+                    ),
                 ) as client:
                     initialize = {
                         "jsonrpc": "2.0",
@@ -228,7 +239,10 @@ class OAuthProtocolTests(unittest.TestCase):
                     self.assertEqual(resource.status_code, 200)
                     self.assertEqual(
                         resource.json()["resource"],
-                        "https://smartsearch-mcp-home.172906573.xyz/mcp",
+                        (
+                            "https://smartsearch-mcp-home.172906573.xyz:"
+                            "28443/mcp"
+                        ),
                     )
 
                     metadata = client.get(
@@ -291,6 +305,59 @@ class OAuthProtocolTests(unittest.TestCase):
                         urlsplit(missing_pkce.headers["location"]).query
                     )
                     self.assertEqual(pkce_error["error"], ["invalid_request"])
+
+                    local_resource = client.get(
+                        "/authorize",
+                        params={
+                            "client_id": accepted.json()["client_id"],
+                            "redirect_uri": "http://127.0.0.1:54321/callback",
+                            "response_type": "code",
+                            "scope": "openid profile offline_access",
+                            "state": "local-resource-state",
+                            "code_challenge": "A" * 43,
+                            "code_challenge_method": "S256",
+                            "resource": (
+                                "https://smartsearch-mcp-home.172906573.xyz/mcp"
+                            ),
+                        },
+                        follow_redirects=False,
+                    )
+                    self.assertEqual(local_resource.status_code, 302)
+                    self.assertTrue(
+                        local_resource.headers["location"].startswith(
+                            "https://smartsearch-mcp-home.172906573.xyz:"
+                            "28443/consent?"
+                        )
+                    )
+
+                    rejected_resource = client.get(
+                        "/authorize",
+                        params={
+                            "client_id": accepted.json()["client_id"],
+                            "redirect_uri": "http://127.0.0.1:54321/callback",
+                            "response_type": "code",
+                            "scope": "openid profile offline_access",
+                            "state": "wrong-resource-state",
+                            "code_challenge": "B" * 43,
+                            "code_challenge_method": "S256",
+                            "resource": "https://evil.example/mcp",
+                        },
+                        follow_redirects=False,
+                    )
+                    self.assertEqual(rejected_resource.status_code, 302)
+                    rejected_resource_error = parse_qs(
+                        urlsplit(
+                            rejected_resource.headers["location"]
+                        ).query
+                    )
+                    self.assertEqual(
+                        rejected_resource_error["error"],
+                        ["invalid_request"],
+                    )
+                    self.assertEqual(
+                        rejected_resource_error["error_description"],
+                        ["Resource does not match this server"],
+                    )
 
                     wrong_issuer = JWTIssuer(
                         issuer=auth.jwt_issuer.issuer,
