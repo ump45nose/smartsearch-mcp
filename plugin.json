@@ -1,0 +1,42 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "smartsearch-home",
+  "version": "1.1.0",
+  "description": "检索公开互联网的最新信息，抓取网页正文并整理可追溯的来源证据。适用于查新闻与产品动态、找官方资料和技术文档、比较工具或方案、核验一个说法、阅读并总结给定链接，以及多来源调研。支持联网搜索、公开网页内容提取、站点地图、检索路径规划和深度研究；返回来源 URL、检索提供方与研究摘要，便于继续核对原文。用户说“帮我查一下”“找可靠来源”“这个链接讲什么”“对比并给出处”或“深入调研”时使用。只访问公开网页，实际可用来源取决于服务端已配置的检索提供方。",
+  "author": {
+    "name": "yuwk"
+  },
+  "repository": "https://github.com/ump45nose/smartsearch-mcp",
+  "keywords": [
+    "联网搜索",
+    "最新信息",
+    "网页正文",
+    "技术文档",
+    "来源核验",
+    "深度调研"
+  ],
+  "extensions": {
+    "com.openai": {
+      "apps": "./.app.json",
+      "interface": {
+        "displayName": "SmartSearch · 联网搜索与调研",
+        "shortDescription": "搜索最新资料、读取公开网页、核验来源与深入调研",
+        "longDescription": "检索公开互联网的最新信息，抓取网页正文并整理可追溯的来源证据。适用于查新闻与产品动态、找官方资料和技术文档、比较工具或方案、核验一个说法、阅读并总结给定链接，以及多来源调研。支持联网搜索、公开网页内容提取、站点地图、检索路径规划和深度研究；返回来源 URL、检索提供方与研究摘要，便于继续核对原文。用户说“帮我查一下”“找可靠来源”“这个链接讲什么”“对比并给出处”或“深入调研”时使用。只访问公开网页，实际可用来源取决于服务端已配置的检索提供方。",
+        "developerName": "yuwk",
+        "category": "Productivity",
+        "capabilities": [
+          "Read"
+        ],
+        "websiteURL": "https://github.com/ump45nose/smartsearch-mcp",
+        "defaultPrompt": [
+          "查找这项技术的最新官方资料，并给出来源。",
+          "读取这个公开链接并总结重点。",
+          "比较这些工具，核验关键结论并给出处。"
+        ],
+        "brandColor": "#7487DE",
+        "logo": "./assets/plugin/logo.png",
+        "composerIcon": "./assets/plugin/logo.png"
+      }
+    }
+  }
+}

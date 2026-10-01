@@ -223,3 +223,7 @@ Compose（不要加 `-v`）、恢复已验证的 Authelia 配置，并保留 dat
 部署、授权、接入、验证、升级和回滚的用户流程必须同步维护在本 README；更细的
 内部 runbook 放在 [OPERATIONS.md](OPERATIONS.md)。本仓库当前没有单独的 `LICENSE`
 文件；再分发前请先确认上游 SmartSearch 及本仓库的授权边界。
+
+## 插件展示与场景说明
+
+本仓库同时维护 **SmartSearch · 联网搜索与调研** 的名称、场景描述和图标。插件包位于仓库根目录，接入和维护说明见 [插件说明](docs/plugin.md)，图标来源见 [图标来源](assets/plugin/SOURCES.md)。
