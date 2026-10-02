@@ -226,4 +226,6 @@ Compose（不要加 `-v`）、恢复已验证的 Authelia 配置，并保留 dat
 
 ## 插件展示与场景说明
 
-本仓库同时维护 **SmartSearch · 联网搜索与调研** 的名称、场景描述和图标。插件包位于仓库根目录，接入和维护说明见 [插件说明](docs/plugin.md)，图标来源见 [图标来源](assets/plugin/SOURCES.md)。
+本仓库同时维护 **SmartSearch** 的名称、场景描述和图标。插件包位于仓库根目录，接入和维护说明见 [插件说明](docs/plugin.md)，图标来源见 [图标来源](assets/plugin/SOURCES.md)。
+
+插件展示信息更新：同步 `plugin.json` 和 `.codex-plugin/plugin.json` 并递增版本，保留 `.app.json`；通过 Plugin Creator 获取当前 release ID 后更新原插件。1.1.1 已缩短名称，安装后需分别核对图标与“已连接”状态。卸载复用原 App 的插件会断开授权，更新时应保留现有安装入口。
